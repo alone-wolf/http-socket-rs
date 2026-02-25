@@ -69,7 +69,7 @@ mod enabled {
         };
 
         let send_body = format!(
-            "hello-http-socket:{}",
+            "hello-http-socket-rs:{}",
             SystemTime::now().duration_since(UNIX_EPOCH)?.as_secs()
         );
         let send_response = http

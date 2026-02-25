@@ -1,4 +1,4 @@
-//! `http-socket` provides a capability-negotiated session layer for HTTP-oriented transports.
+//! `http-socket-rs` provides a capability-negotiated session layer for HTTP-oriented transports.
 //!
 //! Core pieces:
 //! - API builders (`ClientBuilder`, `ServerBuilder`, `SessionBuilder`)

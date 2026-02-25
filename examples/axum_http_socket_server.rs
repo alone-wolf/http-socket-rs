@@ -118,7 +118,7 @@ mod enabled {
             .unwrap_or_else(|| "127.0.0.1:4000".to_string());
         let listener = tokio::net::TcpListener::bind(&bind).await?;
 
-        println!("http-socket axum server running at http://{bind}");
+        println!("http-socket-rs axum server running at http://{bind}");
         println!("health: GET /health");
         println!("connected clients: GET /socket/clients");
         println!("connect payload format:");

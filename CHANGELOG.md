@@ -1,7 +1,7 @@
 # Changelog
 
 ## 0.1.0
-- 建立 `http-socket` 核心模块骨架与 feature 开关。
+- 建立 `http-socket-rs` 核心模块骨架与 feature 开关。
 - 引入握手协商模型（advertise/select/contract）与选择策略接口。
 - 实现会话状态机、transport attach/swap 与重连回滚路径。
 - 提供认证、存储、观测、中间件扩展 trait 边界。

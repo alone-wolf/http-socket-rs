@@ -1,6 +1,6 @@
 # Axum 集成方案
 
-本文件定义 `http-socket` 作为插件接入已有 axum 应用的方式。
+本文件定义 `http-socket-rs` 作为插件接入已有 axum 应用的方式。
 
 ## 1. Feature 开关
 
@@ -32,7 +32,7 @@ let app = Router::new()
 - `examples/axum_http_socket_server.rs`
 - `examples/http_socket_client.rs`
 
-两者组合可演示 `http-socket` 协商/会话与 axum server/client 请求链路。
+两者组合可演示 `http-socket-rs` 协商/会话与 axum server/client 请求链路。
 
 ## 4. 与扩展系统关系
 

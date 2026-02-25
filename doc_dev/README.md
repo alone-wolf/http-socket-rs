@@ -1,4 +1,4 @@
-# http-socket 开发实施文档索引
+# http-socket-rs 开发实施文档索引
 
 本目录面向实现阶段，基于 `doc_design` 的架构 DNA，提供可执行的开发规则、里程碑与验收标准。
 

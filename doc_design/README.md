@@ -1,6 +1,6 @@
-# http-socket 架构设计文档索引
+# http-socket-rs 架构设计文档索引
 
-本目录用于在实现前固定 `http-socket` 的核心架构 DNA，避免后续 API 与内部实现漂移。
+本目录用于在实现前固定 `http-socket-rs` 的核心架构 DNA，避免后续 API 与内部实现漂移。
 
 ## 文档列表
 

@@ -1,6 +1,6 @@
-# http-socket
+# http-socket-rs
 
-`http-socket` is a Rust library prototype for capability-negotiated client/server session setup over HTTP-oriented transports.
+`http-socket-rs` is a Rust library prototype for capability-negotiated client/server session setup over HTTP-oriented transports.
 
 It currently focuses on:
 - handshake negotiation (transport/version/capability contract)

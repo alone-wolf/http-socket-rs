@@ -2,7 +2,7 @@
 
 ## 1. 主导架构范式选择
 
-`http-socket` 采用 **Hybrid（以 tower 风格为主导）**：
+`http-socket-rs` 采用 **Hybrid（以 tower 风格为主导）**：
 
 - 控制面（control plane）采用 tower 风格：会话生命周期、认证、策略、扩展层。
 - 数据面（data plane）采用 hyper 风格：面向协议帧与传输原语，保持低抽象开销。
