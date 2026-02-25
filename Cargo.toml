@@ -1,13 +1,16 @@
 [package]
-name = "http-socket"
+name = "http-socket-rs"
 version = "0.1.0"
 edition = "2024"
 description = "A capability-negotiated HTTP socket framework prototype with pluggable transport and Axum integration."
 license = "MIT OR Apache-2.0"
 readme = "README.md"
-documentation = "https://docs.rs/http-socket"
+documentation = "https://docs.rs/http-socket-rs"
 homepage = "https://github.com/alone-wolf/http-socket-rs"
 repository = "https://github.com/alone-wolf/http-socket-rs"
+
+[lib]
+name = "http_socket"
 
 [features]
 default = ["client", "server"]

@@ -226,7 +226,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "http-socket"
+name = "http-socket-rs"
 version = "0.1.0"
 dependencies = [
  "axum",
