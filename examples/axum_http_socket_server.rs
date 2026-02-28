@@ -470,8 +470,6 @@ mod enabled {
             "ws" => Ok(TransportKind::Ws),
             "sse" => Ok(TransportKind::Sse),
             "poll" => Ok(TransportKind::Poll),
-            "quic" => Ok(TransportKind::Quic),
-            "web_transport" | "web-transport" => Ok(TransportKind::WebTransport),
             _ => Err(format!("unsupported transport `{raw}`")),
         }
     }

@@ -4,6 +4,31 @@ use crate::protocol::handshake::{ClientAdvertise, NegotiationPolicy, ServerSelec
 use crate::protocol::version::ProtocolVersion;
 use crate::transport::types::TransportKind;
 
+fn select_preferred_intersection<T: Copy + PartialEq>(
+    client_items: &[T],
+    server_preferred_items: &[T],
+) -> Option<T> {
+    server_preferred_items
+        .iter()
+        .copied()
+        .find(|item| client_items.contains(item))
+}
+
+fn ensure_required_capabilities_present(
+    enabled: &CapabilityMap,
+    required: &CapabilitySet,
+) -> Result<(), NegotiationError> {
+    for capability in required {
+        if !enabled.contains_key(capability) {
+            return Err(NegotiationError::MissingRequiredCapability(
+                capability.to_string(),
+            ));
+        }
+    }
+
+    Ok(())
+}
+
 pub fn negotiate(
     advertise: &ClientAdvertise,
     policy: &dyn NegotiationPolicy,
@@ -31,10 +56,7 @@ pub fn select_version(
     client_versions: &[ProtocolVersion],
     server_preferred_versions: &[ProtocolVersion],
 ) -> Result<ProtocolVersion, NegotiationError> {
-    if let Some(version) = server_preferred_versions
-        .iter()
-        .copied()
-        .find(|version| client_versions.contains(version))
+    if let Some(version) = select_preferred_intersection(client_versions, server_preferred_versions)
     {
         return Ok(version);
     }
@@ -46,10 +68,8 @@ pub fn select_transport(
     client_transports: &[TransportKind],
     server_preferred_transports: &[TransportKind],
 ) -> Result<TransportKind, NegotiationError> {
-    if let Some(transport) = server_preferred_transports
-        .iter()
-        .copied()
-        .find(|transport| client_transports.contains(transport))
+    if let Some(transport) =
+        select_preferred_intersection(client_transports, server_preferred_transports)
     {
         return Ok(transport);
     }
@@ -65,21 +85,8 @@ pub fn select_capabilities(
 ) -> Result<CapabilityMap, NegotiationError> {
     let enabled = policy.filter_server_capabilities(client_capabilities);
 
-    for required in client_required {
-        if !enabled.contains_key(required) {
-            return Err(NegotiationError::MissingRequiredCapability(
-                required.to_string(),
-            ));
-        }
-    }
-
-    for required in server_required {
-        if !enabled.contains_key(required) {
-            return Err(NegotiationError::MissingRequiredCapability(
-                required.to_string(),
-            ));
-        }
-    }
+    ensure_required_capabilities_present(&enabled, client_required)?;
+    ensure_required_capabilities_present(&enabled, server_required)?;
 
     Ok(enabled)
 }

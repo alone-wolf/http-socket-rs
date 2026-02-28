@@ -14,9 +14,9 @@
 8. [08_error_observability_guide.md](./08_error_observability_guide.md): 错误与可观测性实现规范
 9. [09_test_strategy_matrix.md](./09_test_strategy_matrix.md): 测试矩阵与质量门禁
 10. [10_feature_release_workflow.md](./10_feature_release_workflow.md): feature、版本与发布流程
-11. [11_milestone_task_breakdown.md](./11_milestone_task_breakdown.md): M0-M5 模块级任务拆分
-12. [12_pr_splitting_plan.md](./12_pr_splitting_plan.md): PR 切分与合并规则
-13. [13_pr_work_breakdown.md](./13_pr_work_breakdown.md): PR 执行级工作包拆分
+11. [11_milestone_task_breakdown.md](./11_milestone_task_breakdown.md): M0-M5 统一执行计划（主入口）
+12. [12_pr_splitting_plan.md](./12_pr_splitting_plan.md): PR 拆分历史文档（已归档）
+13. [13_pr_work_breakdown.md](./13_pr_work_breakdown.md): PR 工作包历史文档（已归档）
 14. [14_release_checklist.md](./14_release_checklist.md): 发布前执行检查清单
 15. [15_axum_integration.md](./15_axum_integration.md): axum 插件化接入方案
 

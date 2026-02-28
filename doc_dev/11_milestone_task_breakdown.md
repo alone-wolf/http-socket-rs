@@ -1,129 +1,115 @@
-# M0-M5 实施任务拆分（模块级）
+# M0-M5 实施任务拆分（统一执行版）
 
-本文件将 `03_milestone_and_acceptance.md` 进一步拆分为“可执行任务 + 产出物 + 依赖关系”。
+本文件是当前唯一维护的实施主计划，用于替代历史上的多份里程碑/PR 重复拆分文档。
+
+## 使用规则
+
+- 里程碑目标与验收：以 `03_milestone_and_acceptance.md` 为准。
+- 本文件只维护“可执行任务 + 关键产出 + 依赖关系”。
+- PR 拆分建议放在本文件末尾，不再单独维护镜像文档。
 
 ## M0：工程骨架与边界固定
 
-### 任务清单
+### 任务
 
-1. 定义目录与模块骨架（`core/protocol/transport/api/extension/error`）。
-2. 在 `Cargo.toml` 定义 feature 开关（`ws/sse/poll/client/server/tower/tracing/metrics`）。
-3. 建立最小公共类型（`SessionId`、`ProtocolVersion`、`TransportKind`、`CapabilityKey`）。
-4. 约束依赖方向（禁止 core 反向依赖 api）。
-5. 加入基础 CI 编译检查（默认 feature + 最小 feature）。
+1. 固定目录和模块边界（`core/protocol/transport/api/extension/error`）。
+2. 在 `Cargo.toml` 定义 feature（`ws/sse/poll/client/server/tower/tracing/metrics`）。
+3. 建立基础公共类型（`SessionId`、`ProtocolVersion`、`TransportKind`、`CapabilityKey`）。
+4. 固定依赖方向（禁止 `core -> api` 反向依赖）。
 
-### 产出物
+### 产出
 
-- 模块目录与 `mod.rs`。
-- feature 列表与默认组合声明。
-- 基础公共类型定义文档注释。
-
-### 依赖
-
-- 无（首阶段）。
+- 模块骨架与 `mod.rs`。
+- feature 声明与默认组合。
+- 基础类型及最小测试。
 
 ## M1：协商协议与能力契约
 
-### 任务清单
+### 任务
 
-1. 定义 `ClientAdvertise` / `ServerSelect` 数据结构。
-2. 实现“版本交集 + transport 交集 + capability 子集”选择逻辑。
-3. 定义协商策略接口（优先级、强制能力、降级规则）。
-4. 实现协商结果 `CapabilityContract`。
-5. 增加协商失败错误分类（无版本交集、无传输交集、必需能力缺失）。
+1. 定义 `ClientAdvertise` / `ServerSelect`。
+2. 实现版本/transport 交集选择与 capability 过滤。
+3. 定义策略接口（偏好顺序、必需能力）。
+4. 产出 `CapabilityContract`。
 
-### 产出物
+### 产出
 
-- 协商核心函数与策略接口。
-- `CapabilityContract` 类型及验证方法。
-- 协商单元测试与反例测试。
-
-### 依赖
-
-- 依赖 M0 的基础类型。
+- 协商核心函数。
+- 协商策略接口。
+- 协商失败路径测试。
 
 ## M2：SessionCore 与状态机
 
-### 任务清单
+### 任务
 
-1. 定义 runtime 状态枚举（`Connecting/Negotiating/Active/Resuming/Draining/Closed`）。
-2. 实现状态迁移守卫（合法迁移表）。
-3. 建立 `SessionCore`（协议状态、契约、发送队列引用）。
-4. 将协商结果绑定到 session 契约。
-5. 对非法迁移输出结构化错误与状态上下文。
+1. 定义 runtime 状态（`Connecting/Negotiating/Active/Resuming/Draining/Closed`）。
+2. 实现状态迁移守卫。
+3. 建立 `SessionCore`（会话身份、契约、transport 引用、发送队列）。
 
-### 产出物
+### 产出
 
-- 状态机迁移实现与 guard。
-- `SessionCore` 基础实现。
-- 状态机测试（合法/非法迁移）。
-
-### 依赖
-
-- 依赖 M1 的协商产物。
+- 状态机实现。
+- `SessionCore` 主体实现。
+- 合法/非法迁移测试。
 
 ## M3：Transport 绑定与重连交换
 
-### 任务清单
+### 任务
 
-1. 定义 `TransportHandle` 抽象与 `TransportRegistry`。
-2. 实现 `SessionCore` 的 attach/swap 原子流程。
-3. 实现 resume token 校验接口（可由扩展实现）。
-4. 定义重连时契约兼容检查。
-5. 处理 swap 失败回滚路径（保持旧连接或进入可恢复态）。
+1. 定义 `TransportHandle`、`TransportRegistry`。
+2. 实现 attach 主流程。
+3. 实现 swap 原子替换与失败回滚。
+4. 定义 resume token 校验接口。
+5. 定义契约兼容检查。
 
-### 产出物
+### 产出
 
 - attach/swap 生命周期代码。
-- 重连流程测试（同 transport / 跨 transport / 拒绝 attach）。
-- 并发安全说明与临界区策略。
+- 重连成功/拒绝/回滚测试。
 
-### 依赖
+## M4：扩展面接入
 
-- 依赖 M2 状态机与 session 主体。
+### 任务
 
-## M4：扩展面接入（auth/store/obs/middleware）
+1. 定义 `Authenticator` trait。
+2. 定义 `SessionStore` trait。
+3. 定义 observability hook（event/metric）。
+4. 定义 middleware 扩展边界（feature `tower`/`axum`）。
 
-### 任务清单
+### 产出
 
-1. 定义 `Authenticator` trait 与调用时机。
-2. 定义 `SessionStore` trait（保存/读取/过期语义）。
-3. 定义 observability hook（事件、span、metrics 抽象）。
-4. 定义 middleware 接入边界（tower feature 启用时可用）。
-5. 统一扩展错误到 `FrameworkError`。
+- 扩展 trait 集与默认 noop/allow-all 实现。
+- 扩展失败分类与上抛路径。
+- 扩展集成测试。
 
-### 产出物
+## M5：稳定性与发布准备
 
-- 扩展 trait 集与默认空实现。
-- 扩展调用路径与失败处理策略。
-- 扩展集成测试（成功/可恢复失败/致命失败）。
+### 任务
 
-### 依赖
+1. 补齐测试矩阵覆盖。
+2. 完成示例与 API 文档。
+3. 完成 feature 组合验证。
+4. 更新变更记录和发布清单。
 
-- 依赖 M3 的 session/runtime 主流程。
+### 产出
 
-## M5：稳定性、文档、发布准备
+- 测试与 feature 组合验证结果。
+- 对齐实现的文档与示例。
+- 发布前检查记录。
 
-### 任务清单
+## 建议 PR 切分（保留摘要）
 
-1. 补齐测试矩阵覆盖（协商、状态机、重连、扩展、feature 组合）。
-2. 完成示例与 API 文档（client/server 最小可运行样例）。
-3. 进行 feature 裁剪验证（启用/禁用组合）。
-4. 整理错误码与观测事件字典。
-5. 发布前兼容性检查与版本说明。
+1. 骨架与 feature。
+2. 基础类型与错误。
+3. 协商数据结构。
+4. 协商算法。
+5. 状态机与 `SessionCore`。
+6. transport 抽象与 attach。
+7. swap 与回滚。
+8. 扩展面。
+9. feature 组合与集成测试。
+10. 文档/示例/发布收尾。
 
-### 产出物
+## 归档说明
 
-- 可复现测试矩阵报告。
-- 开发文档与示例同步更新。
-- 发布检查清单结果。
-
-### 依赖
-
-- 依赖 M0-M4 全部产物。
-
-## 并行执行建议
-
-- 可并行 A：M1 协商数据结构 与 M2 状态机框架（先对齐接口）。
-- 可并行 B：M3 transport 抽象 与 M4 扩展 trait 定义。
-- 不可并行：M5 必须在前置里程碑稳定后进行。
+历史拆分文档 `12_pr_splitting_plan.md` 与 `13_pr_work_breakdown.md` 不再维护，改为指向本文件，避免重复更新。

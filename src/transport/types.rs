@@ -5,8 +5,6 @@ pub enum TransportKind {
     Ws,
     Sse,
     Poll,
-    Quic,
-    WebTransport,
 }
 
 impl fmt::Display for TransportKind {
@@ -15,8 +13,6 @@ impl fmt::Display for TransportKind {
             TransportKind::Ws => "ws",
             TransportKind::Sse => "sse",
             TransportKind::Poll => "poll",
-            TransportKind::Quic => "quic",
-            TransportKind::WebTransport => "web_transport",
         };
 
         write!(f, "{}", value)
