@@ -27,5 +27,23 @@ pub enum CapabilityValue {
     Text(String),
 }
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum CapabilityRequirement {
+    Present,
+    BoolTrue,
+    Equals(CapabilityValue),
+}
+
+impl CapabilityRequirement {
+    pub fn is_satisfied_by(&self, value: &CapabilityValue) -> bool {
+        match self {
+            Self::Present => true,
+            Self::BoolTrue => matches!(value, CapabilityValue::Bool(true)),
+            Self::Equals(expected) => expected == value,
+        }
+    }
+}
+
 pub type CapabilityMap = BTreeMap<CapabilityKey, CapabilityValue>;
 pub type CapabilitySet = BTreeSet<CapabilityKey>;
+pub type CapabilityRequirementMap = BTreeMap<CapabilityKey, CapabilityRequirement>;

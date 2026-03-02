@@ -1,9 +1,11 @@
-use crate::protocol::capability::{CapabilityKey, CapabilityMap, CapabilitySet};
+use crate::protocol::capability::{
+    CapabilityKey, CapabilityMap, CapabilityRequirement, CapabilityRequirementMap, CapabilityValue,
+};
 use crate::protocol::version::ProtocolVersion;
 use crate::transport::types::TransportKind;
 
 pub trait NegotiationPolicy {
-    fn required_capabilities(&self) -> &CapabilitySet;
+    fn required_capabilities(&self) -> &CapabilityRequirementMap;
 
     fn version_preference(&self) -> &[ProtocolVersion];
 
@@ -28,7 +30,7 @@ pub trait NegotiationPolicy {
 pub struct ServerPreferencePolicy {
     pub preferred_versions: Vec<ProtocolVersion>,
     pub preferred_transports: Vec<TransportKind>,
-    pub required: CapabilitySet,
+    pub required: CapabilityRequirementMap,
 }
 
 impl ServerPreferencePolicy {
@@ -39,18 +41,28 @@ impl ServerPreferencePolicy {
         Self {
             preferred_versions,
             preferred_transports,
-            required: CapabilitySet::default(),
+            required: CapabilityRequirementMap::default(),
         }
     }
 
     pub fn with_required_capability(mut self, key: CapabilityKey) -> Self {
-        self.required.insert(key);
+        self.required.insert(key, CapabilityRequirement::BoolTrue);
+        self
+    }
+
+    pub fn with_required_capability_value(
+        mut self,
+        key: CapabilityKey,
+        expected: CapabilityValue,
+    ) -> Self {
+        self.required
+            .insert(key, CapabilityRequirement::Equals(expected));
         self
     }
 }
 
 impl NegotiationPolicy for ServerPreferencePolicy {
-    fn required_capabilities(&self) -> &CapabilitySet {
+    fn required_capabilities(&self) -> &CapabilityRequirementMap {
         &self.required
     }
 

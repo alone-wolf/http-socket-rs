@@ -1,5 +1,5 @@
 use crate::error::NegotiationError;
-use crate::protocol::capability::{CapabilityMap, CapabilitySet};
+use crate::protocol::capability::{CapabilityMap, CapabilityRequirementMap};
 use crate::protocol::handshake::{ClientAdvertise, NegotiationPolicy, ServerSelect};
 use crate::protocol::version::ProtocolVersion;
 use crate::transport::types::TransportKind;
@@ -14,16 +14,21 @@ fn select_preferred_intersection<T: Copy + PartialEq>(
         .find(|item| client_items.contains(item))
 }
 
-fn ensure_required_capabilities_present(
+fn ensure_required_capabilities_satisfied(
     enabled: &CapabilityMap,
-    required: &CapabilitySet,
+    required: &CapabilityRequirementMap,
 ) -> Result<(), NegotiationError> {
-    for capability in required {
-        if !enabled.contains_key(capability) {
+    for (capability, requirement) in required {
+        let Some(value) = enabled.get(capability) else {
             return Err(NegotiationError::MissingRequiredCapability(
                 capability.to_string(),
             ));
-        }
+        };
+        if !requirement.is_satisfied_by(value) {
+            return Err(NegotiationError::RequiredCapabilityNotSatisfied(
+                capability.to_string(),
+            ));
+        };
     }
 
     Ok(())
@@ -79,14 +84,14 @@ pub fn select_transport(
 
 pub fn select_capabilities(
     client_capabilities: &CapabilityMap,
-    client_required: &CapabilitySet,
-    server_required: &CapabilitySet,
+    client_required: &CapabilityRequirementMap,
+    server_required: &CapabilityRequirementMap,
     policy: &dyn NegotiationPolicy,
 ) -> Result<CapabilityMap, NegotiationError> {
     let enabled = policy.filter_server_capabilities(client_capabilities);
 
-    ensure_required_capabilities_present(&enabled, client_required)?;
-    ensure_required_capabilities_present(&enabled, server_required)?;
+    ensure_required_capabilities_satisfied(&enabled, client_required)?;
+    ensure_required_capabilities_satisfied(&enabled, server_required)?;
 
     Ok(enabled)
 }

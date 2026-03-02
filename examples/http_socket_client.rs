@@ -5,8 +5,8 @@ mod enabled {
 
     use http_socket::protocol::handshake::ClientAdvertise;
     use http_socket::{
-        CapabilityKey, CapabilityMap, CapabilityValue, ClientBuilder, ProtocolVersion,
-        TransportKind,
+        CapabilityKey, CapabilityMap, CapabilityRequirement, CapabilityValue, ClientBuilder,
+        ProtocolVersion, TransportKind,
     };
 
     pub async fn run() -> Result<(), Box<dyn std::error::Error>> {
@@ -36,7 +36,7 @@ mod enabled {
             values.insert(CapabilityKey::new("resume"));
             values
         };
-        let advertise = ClientAdvertise::new(
+        let advertise = ClientAdvertise::from_required_keys(
             client.preferred_transports.clone(),
             client.supported_versions.clone(),
             client.capabilities.clone(),
@@ -131,7 +131,13 @@ mod enabled {
         let required = advertise
             .required_capabilities
             .iter()
-            .map(|key| key.as_str().to_string())
+            .map(|(key, requirement)| {
+                format!(
+                    "{}:{}",
+                    key.as_str(),
+                    format_capability_requirement(requirement)
+                )
+            })
             .collect::<Vec<_>>()
             .join(",");
 
@@ -145,6 +151,14 @@ mod enabled {
             CapabilityValue::Bool(value) => value.to_string(),
             CapabilityValue::Number(value) => value.to_string(),
             CapabilityValue::Text(value) => value.clone(),
+        }
+    }
+
+    fn format_capability_requirement(requirement: &CapabilityRequirement) -> String {
+        match requirement {
+            CapabilityRequirement::Present => "present".to_string(),
+            CapabilityRequirement::BoolTrue => "true".to_string(),
+            CapabilityRequirement::Equals(value) => format_capability_value(value),
         }
     }
 

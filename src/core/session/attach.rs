@@ -19,6 +19,14 @@ pub fn attach_transport(
         return Err(FrameworkError::State(StateError::SessionClosed));
     }
 
+    let actual_transport = transport.kind();
+    if actual_transport != contract.transport {
+        return Err(FrameworkError::State(StateError::TransportKindMismatch {
+            expected: contract.transport,
+            actual: actual_transport,
+        }));
+    }
+
     session.transition_to(SessionState::Negotiating)?;
     session.set_contract(contract);
     session.set_transport(transport);

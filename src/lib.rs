@@ -21,9 +21,12 @@ pub use core::state::SessionState;
 pub use error::FrameworkError;
 #[cfg(feature = "axum")]
 pub use integration::axum::{
-    AxumMiddlewareError, AxumRequestContext, HttpSocketAxumLayer, RouterHttpSocketExt,
+    AxumMiddlewareError, AxumRequestContext, HttpSocketAxumLayer, MiddlewareRejectionMode,
+    RouterHttpSocketExt,
 };
-pub use protocol::capability::{CapabilityKey, CapabilityMap, CapabilityValue};
+pub use protocol::capability::{
+    CapabilityKey, CapabilityMap, CapabilityRequirement, CapabilityRequirementMap, CapabilityValue,
+};
 pub use protocol::handshake::{
     CapabilityContract, ClientAdvertise, NegotiationPolicy, ServerPreferencePolicy, ServerSelect,
     negotiate,

@@ -36,7 +36,7 @@ fn negotiation_fails_when_required_capability_is_missing() {
     let mut required = BTreeSet::new();
     required.insert(CapabilityKey::new("codec.binary"));
 
-    let advertise = ClientAdvertise::new(
+    let advertise = ClientAdvertise::from_required_keys(
         vec![TransportKind::Ws],
         vec![ProtocolVersion::new(1)],
         capabilities,
@@ -53,7 +53,7 @@ fn negotiation_fails_when_required_capability_is_missing() {
 
 #[test]
 fn negotiation_fails_when_no_version_intersection() {
-    let advertise = ClientAdvertise::new(
+    let advertise = ClientAdvertise::from_required_keys(
         vec![TransportKind::Ws],
         vec![ProtocolVersion::new(1)],
         CapabilityMap::new(),
@@ -63,4 +63,26 @@ fn negotiation_fails_when_no_version_intersection() {
         ServerPreferencePolicy::new(vec![ProtocolVersion::new(2)], vec![TransportKind::Ws]);
     let err = negotiate(&advertise, &policy).expect_err("version mismatch should fail");
     assert_eq!(err, NegotiationError::NoVersionIntersection);
+}
+
+#[test]
+fn negotiation_fails_when_required_bool_capability_is_false() {
+    let mut capabilities = CapabilityMap::new();
+    capabilities.insert(CapabilityKey::new("resume"), CapabilityValue::Bool(false));
+    let mut required = BTreeSet::new();
+    required.insert(CapabilityKey::new("resume"));
+
+    let advertise = ClientAdvertise::from_required_keys(
+        vec![TransportKind::Ws],
+        vec![ProtocolVersion::new(1)],
+        capabilities,
+        required,
+    );
+    let policy =
+        ServerPreferencePolicy::new(vec![ProtocolVersion::new(1)], vec![TransportKind::Ws]);
+    let err = negotiate(&advertise, &policy).expect_err("false bool should fail");
+    assert_eq!(
+        err,
+        NegotiationError::RequiredCapabilityNotSatisfied("resume".to_string())
+    );
 }

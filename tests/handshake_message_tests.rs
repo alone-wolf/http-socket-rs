@@ -1,7 +1,10 @@
 use std::collections::BTreeSet;
 
 use http_socket::protocol::handshake::{CapabilityContract, ClientAdvertise, ServerSelect};
-use http_socket::{CapabilityKey, CapabilityMap, CapabilityValue, ProtocolVersion, TransportKind};
+use http_socket::{
+    CapabilityKey, CapabilityMap, CapabilityRequirement, CapabilityValue, ProtocolVersion,
+    TransportKind,
+};
 
 #[test]
 fn handshake_message_builds_with_required_fields() {
@@ -13,7 +16,7 @@ fn handshake_message_builds_with_required_fields() {
     let mut required = BTreeSet::new();
     required.insert(CapabilityKey::new("codec.json"));
 
-    let advertise = ClientAdvertise::new(
+    let advertise = ClientAdvertise::from_required_keys(
         vec![TransportKind::Ws],
         vec![ProtocolVersion::new(1)],
         capabilities,
@@ -22,10 +25,11 @@ fn handshake_message_builds_with_required_fields() {
 
     assert_eq!(advertise.transports, vec![TransportKind::Ws]);
     assert_eq!(advertise.versions, vec![ProtocolVersion::new(1)]);
-    assert!(
+    assert_eq!(
         advertise
             .required_capabilities
-            .contains(&CapabilityKey::new("codec.json"))
+            .get(&CapabilityKey::new("codec.json")),
+        Some(&CapabilityRequirement::BoolTrue)
     );
 }
 

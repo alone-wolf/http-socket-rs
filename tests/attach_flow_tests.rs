@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use http_socket::core::session::attach::attach_transport;
 use http_socket::core::session::core::SessionCore;
-use http_socket::error::FrameworkError;
+use http_socket::error::{FrameworkError, StateError};
 use http_socket::protocol::handshake::CapabilityContract;
 use http_socket::transport::handle::MockTransportHandle;
 use http_socket::{CapabilityMap, ProtocolVersion, SessionId, SessionState, TransportKind};
@@ -40,5 +40,18 @@ fn attach_transport_fails_when_closed() {
     match err {
         FrameworkError::State(_) => {}
         _ => panic!("expected state error"),
+    }
+}
+
+#[test]
+fn attach_transport_fails_when_transport_kind_mismatches_contract() {
+    let mut session = SessionCore::new(SessionId::new(103));
+    let contract = sample_contract();
+    let transport = Arc::new(MockTransportHandle::new(3, TransportKind::Sse));
+
+    let err = attach_transport(&mut session, contract, transport).expect_err("should fail");
+    match err {
+        FrameworkError::State(StateError::TransportKindMismatch { .. }) => {}
+        _ => panic!("expected transport kind mismatch"),
     }
 }

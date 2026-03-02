@@ -1,6 +1,6 @@
 #[cfg(feature = "axum")]
 mod enabled {
-    use std::collections::{BTreeSet, HashMap};
+    use std::collections::HashMap;
     use std::sync::atomic::{AtomicU64, Ordering};
     use std::sync::{Arc, Mutex};
 
@@ -19,9 +19,9 @@ mod enabled {
     };
     use http_socket::transport::handle::MockTransportHandle;
     use http_socket::{
-        AxumMiddlewareError, AxumRequestContext, CapabilityKey, CapabilityMap, CapabilityValue,
-        HttpSocketAxumLayer, ProtocolVersion, RouterHttpSocketExt, ServerBuilder, SessionBuilder,
-        TransportKind,
+        AxumMiddlewareError, AxumRequestContext, CapabilityKey, CapabilityMap,
+        CapabilityRequirement, CapabilityRequirementMap, CapabilityValue, HttpSocketAxumLayer,
+        ProtocolVersion, RouterHttpSocketExt, ServerBuilder, SessionBuilder, TransportKind,
     };
 
     #[derive(Debug)]
@@ -123,7 +123,7 @@ mod enabled {
         println!("connected clients: GET /socket/clients");
         println!("connect payload format:");
         println!(
-            "  transports=ws,poll;versions=1;caps=resume:true,codec.json:true;required=resume"
+            "  transports=ws,poll;versions=1;caps=resume:true,codec.json:true;required=resume:true"
         );
 
         axum::serve(listener, app).await?;
@@ -418,7 +418,7 @@ mod enabled {
         let mut transports = None;
         let mut versions = None;
         let mut capabilities = CapabilityMap::new();
-        let mut required = BTreeSet::new();
+        let mut required = CapabilityRequirementMap::new();
 
         for segment in raw.split(';') {
             let segment = segment.trim();
@@ -529,16 +529,34 @@ mod enabled {
         CapabilityValue::Text(raw.to_string())
     }
 
-    fn parse_required_capabilities(raw: &str) -> BTreeSet<CapabilityKey> {
-        let mut values = BTreeSet::new();
+    fn parse_required_capabilities(raw: &str) -> CapabilityRequirementMap {
+        let mut values = CapabilityRequirementMap::new();
         for item in raw.split(',') {
             let item = item.trim();
             if item.is_empty() {
                 continue;
             }
-            values.insert(CapabilityKey::new(item));
+
+            if let Some((key, value)) = item.split_once(':') {
+                values.insert(
+                    CapabilityKey::new(key.trim()),
+                    parse_capability_requirement(value.trim()),
+                );
+                continue;
+            }
+            values.insert(CapabilityKey::new(item), CapabilityRequirement::BoolTrue);
         }
         values
+    }
+
+    fn parse_capability_requirement(raw: &str) -> CapabilityRequirement {
+        if raw.eq_ignore_ascii_case("present") {
+            return CapabilityRequirement::Present;
+        }
+        if raw.eq_ignore_ascii_case("true") {
+            return CapabilityRequirement::BoolTrue;
+        }
+        CapabilityRequirement::Equals(parse_capability_value(raw))
     }
 
     fn format_capability_keys(capabilities: &CapabilityMap) -> String {

@@ -1,9 +1,13 @@
+use std::convert::Infallible;
 use std::fmt;
+use std::future::Future;
+use std::pin::Pin;
 use std::sync::Arc;
 use std::task::{Context, Poll};
 
 use axum::Router;
-use http::{Method, Request};
+use axum::response::{IntoResponse, Response};
+use http::{Method, Request, StatusCode};
 use tower::{Layer, Service};
 
 use crate::error::ExtensionError;
@@ -27,22 +31,57 @@ impl AxumRequestContext {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct AxumMiddlewareError {
     pub reason: String,
+    pub status: StatusCode,
+}
+
+impl AxumMiddlewareError {
+    pub fn status(&self) -> StatusCode {
+        self.status
+    }
+}
+
+fn status_code_for_error(error: &ExtensionError) -> StatusCode {
+    match error {
+        ExtensionError::MiddlewareRejected(reason) => {
+            let normalized = reason.to_ascii_lowercase();
+            if normalized.contains("only accepts") {
+                StatusCode::METHOD_NOT_ALLOWED
+            } else if normalized.contains("forbidden")
+                || normalized.contains("denied")
+                || normalized.contains("blocked")
+            {
+                StatusCode::FORBIDDEN
+            } else {
+                StatusCode::UNAUTHORIZED
+            }
+        }
+        ExtensionError::HookFailed(_) => StatusCode::UNAUTHORIZED,
+    }
 }
 
 impl From<ExtensionError> for AxumMiddlewareError {
     fn from(value: ExtensionError) -> Self {
+        let status = status_code_for_error(&value);
         Self {
             reason: value.to_string(),
+            status,
         }
     }
 }
 
 pub type AxumMiddlewareHook = Arc<dyn MiddlewareHook<AxumRequestContext>>;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum MiddlewareRejectionMode {
+    Enforce,
+    InjectOnly,
+}
+
 #[derive(Clone)]
 pub struct HttpSocketAxumLayer {
     hook: Option<AxumMiddlewareHook>,
     protected_prefixes: Vec<String>,
+    rejection_mode: MiddlewareRejectionMode,
 }
 
 impl fmt::Debug for HttpSocketAxumLayer {
@@ -50,6 +89,7 @@ impl fmt::Debug for HttpSocketAxumLayer {
         f.debug_struct("HttpSocketAxumLayer")
             .field("has_hook", &self.hook.is_some())
             .field("protected_prefixes", &self.protected_prefixes)
+            .field("rejection_mode", &self.rejection_mode)
             .finish()
     }
 }
@@ -59,6 +99,7 @@ impl Default for HttpSocketAxumLayer {
         Self {
             hook: None,
             protected_prefixes: vec!["/socket".to_string(), "/ws".to_string()],
+            rejection_mode: MiddlewareRejectionMode::Enforce,
         }
     }
 }
@@ -75,6 +116,16 @@ impl HttpSocketAxumLayer {
 
     pub fn protect_prefix(mut self, prefix: impl Into<String>) -> Self {
         self.protected_prefixes.push(prefix.into());
+        self
+    }
+
+    pub fn enforce_rejection(mut self) -> Self {
+        self.rejection_mode = MiddlewareRejectionMode::Enforce;
+        self
+    }
+
+    pub fn inject_only(mut self) -> Self {
+        self.rejection_mode = MiddlewareRejectionMode::InjectOnly;
         self
     }
 
@@ -104,11 +155,13 @@ pub struct HttpSocketAxumService<S> {
 
 impl<S, B> Service<Request<B>> for HttpSocketAxumService<S>
 where
-    S: Service<Request<B>>,
+    S: Service<Request<B>, Response = Response, Error = Infallible> + Send + 'static,
+    S::Future: Send + 'static,
+    B: Send + 'static,
 {
-    type Response = S::Response;
-    type Error = S::Error;
-    type Future = S::Future;
+    type Response = Response;
+    type Error = Infallible;
+    type Future = Pin<Box<dyn Future<Output = Result<Self::Response, Self::Error>> + Send>>;
 
     fn poll_ready(&mut self, cx: &mut Context<'_>) -> Poll<Result<(), Self::Error>> {
         self.inner.poll_ready(cx)
@@ -120,13 +173,20 @@ where
         {
             let context = AxumRequestContext::from_request(&request);
             if let Err(error) = hook.before(&context) {
-                request
-                    .extensions_mut()
-                    .insert(AxumMiddlewareError::from(error));
+                let middleware_error = AxumMiddlewareError::from(error);
+                if self.layer.rejection_mode == MiddlewareRejectionMode::Enforce {
+                    let status = middleware_error.status();
+                    let response =
+                        (status, format!("middleware rejected: {}", middleware_error.reason))
+                            .into_response();
+                    return Box::pin(async move { Ok(response) });
+                }
+                request.extensions_mut().insert(middleware_error);
             }
         }
 
-        self.inner.call(request)
+        let future = self.inner.call(request);
+        Box::pin(future)
     }
 }
 

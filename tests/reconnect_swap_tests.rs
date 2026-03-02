@@ -4,7 +4,7 @@ use http_socket::core::session::attach::attach_transport;
 use http_socket::core::session::core::SessionCore;
 use http_socket::core::session::resume::ResumeTokenValidator;
 use http_socket::core::session::swap::swap_transport;
-use http_socket::error::{AuthError, FrameworkError};
+use http_socket::error::{AuthError, FrameworkError, StateError};
 use http_socket::protocol::handshake::CapabilityContract;
 use http_socket::transport::handle::MockTransportHandle;
 use http_socket::{CapabilityMap, ProtocolVersion, SessionId, SessionState, TransportKind};
@@ -106,4 +106,30 @@ fn reconnect_swap_rolls_back_when_new_transport_is_closed() {
         .expect("previous transport should be restored");
     assert_eq!(active.id(), 1);
     assert!(active.is_open());
+}
+
+#[test]
+fn reconnect_swap_rejects_transport_kind_mismatch() {
+    let mut session = SessionCore::new(SessionId::new(204));
+    let old = Arc::new(MockTransportHandle::new(1, TransportKind::Ws));
+    attach_transport(&mut session, sample_contract(), old).expect("attach should pass");
+
+    let new_transport = Arc::new(MockTransportHandle::new(5, TransportKind::Sse));
+    let err = swap_transport(
+        &mut session,
+        sample_contract(),
+        new_transport,
+        "ok",
+        &AllowValidator,
+    )
+    .expect_err("mismatch should fail");
+
+    match err {
+        FrameworkError::State(StateError::TransportKindMismatch { .. }) => {}
+        _ => panic!("expected transport kind mismatch"),
+    }
+
+    let active = session.transport().expect("old transport should remain");
+    assert_eq!(active.id(), 1);
+    assert_eq!(session.state(), SessionState::Active);
 }

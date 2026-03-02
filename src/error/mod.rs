@@ -2,6 +2,7 @@ use std::error::Error;
 use std::fmt;
 
 use crate::core::state::SessionState;
+use crate::transport::types::TransportKind;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TransportError {
@@ -27,6 +28,7 @@ pub enum NegotiationError {
     NoVersionIntersection,
     NoTransportIntersection,
     MissingRequiredCapability(String),
+    RequiredCapabilityNotSatisfied(String),
 }
 
 impl fmt::Display for NegotiationError {
@@ -36,6 +38,9 @@ impl fmt::Display for NegotiationError {
             Self::NoTransportIntersection => write!(f, "no transport intersection"),
             Self::MissingRequiredCapability(capability) => {
                 write!(f, "missing required capability: {capability}")
+            }
+            Self::RequiredCapabilityNotSatisfied(capability) => {
+                write!(f, "required capability not satisfied: {capability}")
             }
         }
     }
@@ -119,6 +124,10 @@ pub enum StateError {
     },
     MissingCapabilityContract,
     IncompatibleContract,
+    TransportKindMismatch {
+        expected: TransportKind,
+        actual: TransportKind,
+    },
     TransportAlreadyAttached,
     SessionClosed,
 }
@@ -131,6 +140,12 @@ impl fmt::Display for StateError {
             }
             Self::MissingCapabilityContract => write!(f, "missing capability contract"),
             Self::IncompatibleContract => write!(f, "incompatible capability contract"),
+            Self::TransportKindMismatch { expected, actual } => {
+                write!(
+                    f,
+                    "transport kind mismatch: expected {expected}, got {actual}"
+                )
+            }
             Self::TransportAlreadyAttached => write!(f, "transport already attached"),
             Self::SessionClosed => write!(f, "session is already closed"),
         }

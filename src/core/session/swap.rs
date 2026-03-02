@@ -28,6 +28,14 @@ pub fn swap_transport(
         return Err(FrameworkError::State(StateError::IncompatibleContract));
     }
 
+    let actual_transport = new_transport.kind();
+    if actual_transport != new_contract.transport {
+        return Err(FrameworkError::State(StateError::TransportKindMismatch {
+            expected: new_contract.transport,
+            actual: actual_transport,
+        }));
+    }
+
     session.transition_to(SessionState::Resuming)?;
 
     let previous = session.take_transport();

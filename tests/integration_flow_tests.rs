@@ -19,7 +19,7 @@ fn negotiation_attach_and_reconnect_flow() {
     let mut offered_capabilities = CapabilityMap::new();
     offered_capabilities.insert(CapabilityKey::new("resume"), CapabilityValue::Bool(true));
 
-    let advertise = ClientAdvertise::new(
+    let advertise = ClientAdvertise::from_required_keys(
         vec![TransportKind::Ws, TransportKind::Sse],
         vec![ProtocolVersion::new(1)],
         offered_capabilities,
